@@ -1,9 +1,12 @@
+import { Redis } from "@upstash/redis";
+
+const kv = Redis.fromEnv();
+
 export async function GET() {
-  return new Response(
-    JSON.stringify({ ok: true }),
-    {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }
-  );
+  try {
+    await kv.ping();
+    return Response.json({ ok: true });
+  } catch {
+    return Response.json({ ok: false }, { status: 500 });
+  }
 }

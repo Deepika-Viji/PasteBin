@@ -1,12 +1,15 @@
-import { kv } from "@vercel/kv";
+import { Redis } from "@upstash/redis";
 import { randomUUID } from "crypto";
-import { getNow } from "../lib/time";
+import { getNow } from "../../lib/time";
+
+const kv = Redis.fromEnv();
 
 export async function POST(request) {
   const body = await request.json();
   const { content, ttl_seconds, max_views } = body;
 
-  if (!content || typeof content !== "string" || content.trim() === "") {
+  // validations
+  if (!content || typeof content !== "string" || !content.trim()) {
     return Response.json({ error: "content is required" }, { status: 400 });
   }
 
@@ -19,18 +22,26 @@ export async function POST(request) {
   }
 
   const id = randomUUID();
-  const now = getNow(request.headers);
+  const now = getNow(request);
+
+  const expires_at = ttl_seconds ? now + ttl_seconds * 1000 : null;
 
   const paste = {
     id,
     content,
     created_at: now,
-    expires_at: ttl_seconds ? now + ttl_seconds * 1000 : null,
+    expires_at,
     max_views: max_views ?? null,
     views: 0,
   };
 
-  await kv.set(`paste:${id}`, paste);
+  const key = `paste:${id}`;
+  await kv.set(key, paste);
+
+  // Redis automation
+  if (ttl_seconds) {
+    await kv.expire(key, ttl_seconds);
+  }
 
   return Response.json(
     {
