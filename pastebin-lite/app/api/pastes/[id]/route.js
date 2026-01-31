@@ -16,12 +16,10 @@ export async function GET(request, { params }) {
   const now = getNow(request);
 
   if (paste.expires_at && now >= paste.expires_at) {
-    await kv.del(key);
     return Response.json({ error: "Expired" }, { status: 404 });
   }
 
   if (paste.max_views !== null && paste.views >= paste.max_views) {
-    await kv.del(key);
     return Response.json({ error: "View limit exceeded" }, { status: 404 });
   }
 
