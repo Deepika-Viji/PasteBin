@@ -37,3 +37,4 @@ tested automatically against its deployed API.
 
 ```bash
 npm install
+npm run dev
